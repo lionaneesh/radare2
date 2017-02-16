@@ -267,11 +267,25 @@ typedef struct {
 	ut16 NumberOfStreams;
 } Pe32_image_metadata_header, Pe64_image_metadata_header;
 
+typedef struct
+{
+    ut32 Reserved1;
+    ut8 MajorVersion;
+    ut8 MinorVersion;
+    ut8 OffsetSizeFlags; // indicates offset sizes to be used within the other streams.
+    ut8 Reserved2;  // Always set to 0x01 [01]
+    ut64 TablesFlags;  // indicates which tables are present. 8 bytes.
+    ut64 SortedTablesFlags; // indicates which tables are sorted. 8 bytes.
+    ut32 **TableSizes; // Size of each table. Array count will be same as # of '1's in TableFlags.
+} Pe32_image_metadata_stream_header, Pe64_image_metadata_stream_header; 
+
 typedef struct {
 	ut32 Offset;
 	ut32 Size;
 	char* Name;
 } Pe32_image_metadata_stream, Pe64_image_metadata_stream;
+
+
 
 #define PE_IMAGE_SIZEOF_SHORT_NAME 8
 

@@ -637,6 +637,25 @@ static int bin_pe_read_metadata_string(char* to, char* from) {
 	return covered;
 }
 
+static PE_(image_metadata_stream_header)* bin_pe_read_stream_header(struct PE_(r_bin_pe_obj_t)* bin, PE_(image_metadata_stream) *stream, PE_DWord metadata_directory) {
+	PE_DWord stream_address = metadata_directory + stream->Offset;
+	PE_(image_metadata_stream_header) *stream_header = malloc(sizeof(PE_(image_metadata_stream_header)));
+	if (!stream_address || !stream_header) {
+		return NULL;
+	}
+	int rr = r_buf_fread_at (bin->b, stream_address, (ut8 *) stream_header, bin->big_endian? "1I4c2L": "1i4c2l", 1);
+	if (rr < 1) {
+		eprintf("Failed to read stream header.\n");
+		free (stream_header);
+		return NULL;
+	} else {
+		eprintf("0x%lx 0x%lx", stream_header->TablesFlags, stream_header->SortedTablesFlags);
+		eprintf("\n");
+	}
+	return stream_header;
+
+}
+
 static int bin_pe_init_metadata_hdr(struct PE_(r_bin_pe_obj_t)* bin) {
 	PE_DWord metadata_directory = bin->clr_hdr? bin_pe_rva_to_paddr (bin, bin->clr_hdr->MetaDataDirectoryAddress): 0;
 	PE_(image_metadata_header) * metadata = R_NEW0 (PE_(image_metadata_header));
@@ -736,9 +755,12 @@ static int bin_pe_init_metadata_hdr(struct PE_(r_bin_pe_obj_t)* bin) {
 			free (stream);
 			goto fail;
 		}
-		eprintf ("Stream name: %s %d\n", stream_name, c);
+		eprintf ("Stream name: %s\n", stream_name);
 		stream->Name = stream_name;
 		streams[count] = stream;
+		if (strcmp(stream_name, "#~") == 0 || strcmp(stream_name, "#-") == 0) {
+			PE_(image_metadata_stream_header) *stream_header = bin_pe_read_stream_header(bin, stream, metadata_directory);
+		}
 		start_of_stream += 8 + c;
 		count += 1;
 	}
